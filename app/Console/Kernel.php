@@ -12,7 +12,10 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        // $schedule->command('inspire')->hourly();
+        $schedule->call(function () {
+            $controller = new \App\Http\Controllers\TaskController();
+            $controller->generateCsvFile();
+        })->everyMinute();
     }
 
     /**

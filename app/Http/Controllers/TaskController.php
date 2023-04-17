@@ -6,6 +6,10 @@ use App\Models\Task;
 use App\Models\Employees;
 use Illuminate\Http\Request;
 use Yajra\DataTables\Facades\DataTables;
+use Mail;
+use App\Mail\AdminMail;
+use App\Mail\AssigneeMail;
+use DB;
 
 class TaskController extends Controller
 {
@@ -85,8 +89,16 @@ if($request->assignee){
      */
      public function store(Request $request)
      {
+
          Task::updateOrCreate(['id' => $request->id],
                  ['title' => $request->title, 'description' => $request->description, 'assignee' => null, 'status' => 0]);
+
+         $admin_mail = [
+             'title' => 'Mail from Otaskit.com',
+             'body' => 'New task "'.$request->title.'" has been created.'
+         ];
+
+         Mail::to('admin@otaskit.com')->send(new AdminMail($admin_mail));
 
          return response()->json(['success'=>'Task saved successfully.']);
      }
@@ -114,6 +126,13 @@ if($request->assignee){
          Task::where('id',$id)->update(
                  [ 'assignee' => $request->emp_id, 'status' => 1]
                );
+               $assignee = Employees::find($request->emp_id);
+               $admin_mail = [
+                   'title' => 'Mail from Otaskit.com',
+                   'body' => 'One new task is assigned to you.'
+               ];
+
+               Mail::to($assignee->email)->send(new AdminMail($admin_mail));
        }elseif ($request->btn==2) {
          Task::where('id',$id)->update(
                  [ 'status' => $request->status]
@@ -133,4 +152,52 @@ if($request->assignee){
 
          return response()->json(['success'=>'Task deleted successfully.']);
      }
+
+     public function generateCsvFile() {
+
+      $today = date('dmY_his');
+     $tasks = DB::table('tasks')->leftjoin('employees','tasks.assignee','employees.id')
+     ->where('tasks.status','!=',3)->orderBy('employees.name','ASC')->orderBy('tasks.status','ASC')->select('title','employees.name','tasks.status')->get();
+     $data[] = ['sl_no', 'title', 'assignee', 'status'];
+     $sl_no = 1;
+     $status=[
+       0=>'Unassigned',
+       1=>'Assigned',
+       2=>'In Progress',
+     ];
+
+     foreach ($tasks as $task) {
+
+       $data[] =
+           [
+             $sl_no,
+             $task->title,
+             $task->name,
+             $status[$task->status]
+       ];
+       $sl_no++;
+     }
+
+     $file_path = '/storage/app/report_' . $today . '.csv';
+     $pathToFile=rtrim(public_path(),'public').$file_path;
+     $file = fopen($pathToFile, 'w+');
+
+     foreach ($data as $fields) {
+         fputcsv($file, $fields);
+     }
+     fclose($file);
+
+     $mailData = [
+         'title' => 'Mail from Otaskit.com',
+         'body' => 'Daily Report.'
+     ];
+     Mail::send('emails.mail', compact('mailData'), function($message)use($pathToFile) {
+
+         $message->to('admin@otaskit.com')
+                  ->subject('Otaskit - Daily report')
+                  ->attach($pathToFile);
+
+     });
+
+ }
 }

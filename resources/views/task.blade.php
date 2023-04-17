@@ -24,6 +24,9 @@
 
 <div class="container">
     <h1>Manage Task</h1>
+    <div class="col-sm-offset-10 col-sm-2">
+     <a class="btn btn-info" href="{{ route('employees.index') }}">View Employees</a>
+    </div>
     <div class="row"><div class="col-md-12"><div id="msg_content"></div></div></div>
     <form id="postForm" name="postForm" class="form-horizontal">
        <input type="hidden" name="id" id="id">
