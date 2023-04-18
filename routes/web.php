@@ -18,9 +18,10 @@ use App\Http\Controllers\TaskController;
 Route::get('/', function () {
     return view('welcome');
 });
-
-Route::resource('employees', EmployeesController::class);
-Route::resource('task', TaskController::class);
+Route::group(['middleware' => ['auth']], function () {
+  Route::resource('employees', EmployeesController::class);
+  Route::resource('task', TaskController::class);
+});
 
 Auth::routes();
 
