@@ -15,7 +15,7 @@ class Kernel extends ConsoleKernel
         $schedule->call(function () {
             $controller = new \App\Http\Controllers\TaskController();
             $controller->generateCsvFile();
-        })->->dailyAt('20:00'); // Send daily report at 8.00 pm evey day
+        })->dailyAt('20:00'); // Send daily report at 8.00 pm evey day
     }
 
     /**
